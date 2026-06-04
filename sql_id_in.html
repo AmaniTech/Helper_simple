@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL ID IN Generator</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #121722;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 28px 48px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .wrap {
+      width: min(100%, 1100px);
+    }
+
+    label {
+      display: block;
+      margin: 0 0 4px;
+      color: #8cff45;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #6fcb35;
+      border-radius: 4px;
+      background: #3a3a3a;
+      color: #ffffff;
+      font-size: 16px;
+      line-height: 1.35;
+      padding: 8px;
+      outline: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    input {
+      height: 42px;
+    }
+
+    select {
+      height: 42px;
+      cursor: pointer;
+    }
+
+    textarea {
+      min-height: 300px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #8cff45;
+      box-shadow: 0 0 0 2px rgba(140, 255, 69, 0.16);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin: 12px 0 0;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      background: #7bd43b;
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+      min-height: 42px;
+      padding: 0 18px;
+    }
+
+    button:hover {
+      background: #8cff45;
+    }
+
+    .secondary {
+      background: #4b5563;
+    }
+
+    .secondary:hover {
+      background: #64748b;
+    }
+
+    .status {
+      min-height: 20px;
+      margin-top: 8px;
+      color: #8cff45;
+      font-size: 14px;
+      text-align: right;
+    }
+
+    .result-label {
+      margin-top: 24px;
+    }
+
+    #hasil {
+      min-height: 320px;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 20px 14px;
+      }
+
+      .grid,
+      .controls {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: stretch;
+      }
+
+      button {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="grid">
+      <div>
+        <label for="namaTable">Nama Table</label>
+        <input id="namaTable" type="text" value="custom_nama_table" spellcheck="false">
+      </div>
+
+      <div>
+        <label for="namaKolom">Nama Kolom</label>
+        <input id="namaKolom" type="text" value="ID" spellcheck="false">
+      </div>
+    </section>
+
+    <section class="controls">
+      <div>
+        <label for="modePetik">Mode Petik</label>
+        <select id="modePetik">
+          <option value="auto">Auto</option>
+          <option value="semua">Semua pakai petik</option>
+          <option value="tanpa">Semua tanpa petik</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="modeFormat">Format Query</label>
+        <select id="modeFormat">
+          <option value="multi">Multi baris</option>
+          <option value="satu">Satu baris</option>
+        </select>
+      </div>
+    </section>
+
+    <label for="daftarId">ID</label>
+    <textarea id="daftarId" spellcheck="false" autofocus>1097570
+1142517
+1147933</textarea>
+
+    <label for="hasil" class="result-label">Hasil</label>
+    <textarea id="hasil" spellcheck="false" readonly></textarea>
+
+    <div class="actions">
+      <button id="copyHasil" type="button">Copy Hasil</button>
+      <button id="clearInput" class="secondary" type="button">Clear</button>
+    </div>
+    <div id="status" class="status" aria-live="polite"></div>
+  </main>
+
+  <script>
+    $(function () {
+      const storageKey = 'sql_id_in_generator';
+
+      function amanUntukPetikSatu(teks) {
+        return teks.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      }
+
+      function bersihkanIdentifier(teks, fallback) {
+        return $.trim(teks) || fallback;
+      }
+
+      function formatValue(item, modePetik) {
+        if (modePetik === 'tanpa') {
+          return item;
+        }
+
+        if (modePetik === 'auto' && /^-?\d+(\.\d+)?$/.test(item)) {
+          return item;
+        }
+
+        return "'" + amanUntukPetikSatu(item) + "'";
+      }
+
+      function simpanSetting() {
+        const data = {
+          namaTable: $('#namaTable').val(),
+          namaKolom: $('#namaKolom').val(),
+          modePetik: $('#modePetik').val(),
+          modeFormat: $('#modeFormat').val()
+        };
+
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      }
+
+      function pakaiSettingTersimpan() {
+        const raw = localStorage.getItem(storageKey);
+
+        if (!raw) {
+          return;
+        }
+
+        try {
+          const data = JSON.parse(raw);
+          $('#namaTable').val(data.namaTable || 'custom_nama_table');
+          $('#namaKolom').val(data.namaKolom || 'ID');
+          $('#modePetik').val(data.modePetik || 'auto');
+          $('#modeFormat').val(data.modeFormat || 'multi');
+        } catch (error) {
+          localStorage.removeItem(storageKey);
+        }
+      }
+
+      function buatQuery() {
+        const namaTable = bersihkanIdentifier($('#namaTable').val(), 'custom_nama_table');
+        const namaKolom = bersihkanIdentifier($('#namaKolom').val(), 'ID');
+        const modePetik = $('#modePetik').val();
+        const modeFormat = $('#modeFormat').val();
+        const daftarId = $('#daftarId')
+          .val()
+          .split(/\s+/)
+          .map(function (item) {
+            return $.trim(item);
+          })
+          .filter(Boolean);
+
+        const nilai = daftarId.map(function (item) {
+          return formatValue(item, modePetik);
+        });
+
+        const hasil = nilai.length === 0
+          ? 'SELECT * FROM ' + namaTable + ' WHERE ' + namaKolom + ' IN ();'
+          : modeFormat === 'satu'
+            ? 'SELECT * FROM ' + namaTable + ' WHERE ' + namaKolom + ' IN (' + nilai.join(', ') + ');'
+            : 'SELECT * FROM ' + namaTable + ' WHERE ' + namaKolom + ' IN (\n  ' + nilai.join(',\n  ') + '\n);';
+
+        $('#hasil').val(hasil);
+        simpanSetting();
+        $('#status').text('');
+      }
+
+      function copyHasil() {
+        const teks = $('#hasil').val();
+
+        if (!teks) {
+          $('#status').text('Belum ada hasil.');
+          return;
+        }
+
+        navigator.clipboard.writeText(teks).then(function () {
+          $('#status').text('Hasil sudah dicopy.');
+        }).catch(function () {
+          $('#hasil').trigger('focus').trigger('select');
+          document.execCommand('copy');
+          $('#status').text('Hasil sudah dicopy.');
+        });
+      }
+
+      function clearInput() {
+        $('#daftarId').val('');
+        $('#status').text('');
+        buatQuery();
+        $('#daftarId').trigger('focus');
+      }
+
+      pakaiSettingTersimpan();
+      $('#namaTable, #namaKolom, #modePetik, #modeFormat, #daftarId').on('input paste keyup change', buatQuery);
+      $('#copyHasil').on('click', copyHasil);
+      $('#clearInput').on('click', clearInput);
+      buatQuery();
+    });
+  </script>
+</body>
+</html>

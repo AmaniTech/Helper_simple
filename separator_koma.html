@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Separator Koma</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #121722;
+      color: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
+      padding: 28px 48px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .wrap {
+      width: min(100%, 1100px);
+    }
+
+    label {
+      display: block;
+      margin: 0 0 4px;
+      color: #8cff45;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      resize: vertical;
+      border: 1px solid #6fcb35;
+      border-radius: 4px;
+      background: #3a3a3a;
+      color: #ffffff;
+      font-size: 16px;
+      line-height: 1.35;
+      padding: 3px;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: #8cff45;
+      box-shadow: 0 0 0 2px rgba(140, 255, 69, 0.16);
+    }
+
+    .result-label {
+      margin-top: 24px;
+    }
+
+    #hasil {
+      min-height: 360px;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <label for="teks">Teks Anda</label>
+    <textarea id="teks" spellcheck="false" autofocus></textarea>
+
+    <label for="hasil" class="result-label">Hasil</label>
+    <textarea id="hasil" spellcheck="false" readonly></textarea>
+  </main>
+
+  <script>
+    $(function () {
+      function amanUntukPetikSatu(teks) {
+        return teks.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      }
+
+      function pisahkanDenganKoma() {
+        const daftar = $('#teks')
+          .val()
+          .split(/\r?\n/)
+          .map(function (item) {
+            return $.trim(item);
+          })
+          .filter(Boolean);
+
+        const semuaAngka = daftar.every(function (item) {
+          return /^-?\d+(\.\d+)?$/.test(item);
+        });
+
+        const hasil = semuaAngka
+          ? daftar.join(',')
+          : daftar.map(function (item) {
+              return "'" + amanUntukPetikSatu(item) + "',";
+            }).join('\n');
+
+        $('#hasil').val(hasil);
+      }
+
+      $('#teks').on('input paste keyup change', pisahkanDenganKoma);
+      pisahkanDenganKoma();
+    });
+  </script>
+</body>
+</html>
